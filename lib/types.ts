@@ -45,20 +45,20 @@ export interface VerifyLabelError {
 export type VerifyLabelResult = VerifyLabelResponse | VerifyLabelError
 
 // ============================================
-// Groq LLM Response Types
+// LLM Response Types
 // ============================================
 
-export interface GroqFieldResult {
+export interface LLMFieldResult {
   detected: string
   match: boolean
   confidence: number
   notes: string
 }
 
-export interface GroqComparisonResult {
-  brandName: GroqFieldResult
-  classType: GroqFieldResult
-  alcoholContent: GroqFieldResult
-  netContents: GroqFieldResult
-  governmentWarning: GroqFieldResult
+export interface LLMComparisonResult {
+  brandName: LLMFieldResult
+  classType: LLMFieldResult
+  alcoholContent: LLMFieldResult
+  netContents: LLMFieldResult
+  governmentWarning: LLMFieldResult
 }

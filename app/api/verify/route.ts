@@ -32,12 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vercel limit is 4.5MB body, base64 adds ~33%, so ~20MB original is safe
-    if (body.imageBase64.length > 25_000_000) {
+    if (body.imageBase64.length > 3_000_000) {
       return NextResponse.json(
         {
           success: false,
-          error: "Image too large. Maximum size is 20MB.",
+          error: "Image too large. Maximum size is 3MB.",
           code: "INVALID_INPUT",
         } as VerifyLabelError,
         { status: 400 }
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       body.formData
     )
 
-    // Return appropriate status code
     if (!result.success) {
       return NextResponse.json(result, { status: 500 })
     }
