@@ -24,44 +24,44 @@ export async function verifyLabel(
     return { success: false, error: comparisonResult.error || "LLM comparison failed", code: "LLM_FAILED" }
   }
 
-  const r = comparisonResult.result
+  const extracted = comparisonResult.result
   const fields: FieldResult[] = [
     {
       field: "Brand Name",
       submitted: formData.brandName,
-      detected: r.brandName.detected,
-      match: r.brandName.match,
-      confidence: r.brandName.confidence,
+      detected: extracted.brandName.detected,
+      match: extracted.brandName.match,
+      confidence: extracted.brandName.confidence,
     },
     {
       field: "Class/Type",
       submitted: formData.classType,
-      detected: r.classType.detected,
-      match: r.classType.match,
-      confidence: r.classType.confidence,
+      detected: extracted.classType.detected,
+      match: extracted.classType.match,
+      confidence: extracted.classType.confidence,
     },
     {
       field: "Alcohol Content",
       submitted: formData.alcoholContent,
-      detected: r.alcoholContent.detected,
-      match: r.alcoholContent.match,
-      confidence: r.alcoholContent.confidence,
+      detected: extracted.alcoholContent.detected,
+      match: extracted.alcoholContent.match,
+      confidence: extracted.alcoholContent.confidence,
     },
     {
       field: "Net Contents",
       submitted: formData.netContents,
-      detected: r.netContents.detected,
-      match: r.netContents.match,
-      confidence: r.netContents.confidence,
+      detected: extracted.netContents.detected,
+      match: extracted.netContents.match,
+      confidence: extracted.netContents.confidence,
     },
     {
       field: "Government Warning",
       submitted: formData.governmentWarning.substring(0, 50) + "...",
-      detected: r.governmentWarning.detected.length > 50
-        ? r.governmentWarning.detected.substring(0, 50) + "..."
-        : r.governmentWarning.detected,
-      match: r.governmentWarning.match,
-      confidence: r.governmentWarning.confidence,
+      detected: extracted.governmentWarning.detected.length > 50
+        ? extracted.governmentWarning.detected.substring(0, 50) + "..."
+        : extracted.governmentWarning.detected,
+      match: extracted.governmentWarning.match,
+      confidence: extracted.governmentWarning.confidence,
     },
   ]
 

@@ -1,5 +1,4 @@
 import type React from "react"
-import Script from "next/script";
 import type { Metadata } from "next"
 import { Source_Sans_3, Source_Serif_4, IBM_Plex_Mono } from "next/font/google"
 import "./globals.css"
@@ -35,21 +34,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${sourceSans.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}>
-      <head>
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/react-grab/dist/index.global.js"
-            crossOrigin="anonymous"
-            strategy="beforeInteractive"
-          />
-        )}
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/@react-grab/claude-code/dist/client.global.js"
-            strategy="lazyOnload"
-          />
-        )}
-      </head>
       <body className="font-sans antialiased">
         {children}
       </body>

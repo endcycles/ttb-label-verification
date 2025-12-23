@@ -135,12 +135,6 @@ Return results table with pass/fail per row
 
 Would adapt to actual COLA export structure once specified. The single-label pipeline handles the hard part; batch is orchestration.
 
-## What Was NOT Built
-
-### PDF Support
-
-Scope refinement. Focus on image-based verification. The OCR handles JPG/PNG well; PDF adds complexity without clear requirement.
-
 ## Setup
 
 ```bash
