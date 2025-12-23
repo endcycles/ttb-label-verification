@@ -1,5 +1,6 @@
-import { extractTextFromImage } from "./mistral"
-import { compareWithFormData } from "./groq"
+import { verifyWithVision } from "./groq"
+// import { extractTextFromImage } from "./mistral"
+// import { compareWithFormData } from "./groq"
 import type {
   LabelFormData,
   FieldResult,
@@ -8,7 +9,10 @@ import type {
 } from "./types"
 
 /**
- * Main verification function that orchestrates OCR + LLM comparison
+ * Main verification function
+ *
+ * CURRENT: Single-call Groq Llama 4 Scout (~1-2s)
+ * DISABLED: Mistral OCR + Groq LLM (~8s) - see commented code below
  */
 export async function verifyLabel(
   imageBase64: string,
@@ -17,9 +21,28 @@ export async function verifyLabel(
 ): Promise<VerifyLabelResponse | VerifyLabelError> {
   const startTime = Date.now()
 
-  // Step 1: Extract text using Mistral OCR
-  const ocrResult = await extractTextFromImage(imageBase64, imageType)
+  // ============================================
+  // FAST PATH: Groq Llama 4 Scout (Vision)
+  // Single API call for OCR + comparison (~1-2s)
+  // ============================================
+  const visionResult = await verifyWithVision(imageBase64, imageType, formData)
 
+  if (!visionResult.success || !visionResult.result) {
+    return {
+      success: false,
+      error: visionResult.error || "Vision verification failed",
+      code: "LLM_FAILED",
+    }
+  }
+
+  const r = visionResult.result
+
+  // ============================================
+  // SLOW PATH: Mistral OCR + Groq LLM (~8s)
+  // Uncomment below and comment above to use
+  // ============================================
+  /*
+  const ocrResult = await extractTextFromImage(imageBase64, imageType)
   if (!ocrResult.success) {
     return {
       success: false,
@@ -28,9 +51,7 @@ export async function verifyLabel(
     }
   }
 
-  // Step 2: Compare with form data using Groq LLM
   const comparisonResult = await compareWithFormData(ocrResult.text, formData)
-
   if (!comparisonResult.success || !comparisonResult.result) {
     return {
       success: false,
@@ -39,8 +60,10 @@ export async function verifyLabel(
     }
   }
 
-  // Step 3: Transform LLM output to API response format
   const r = comparisonResult.result
+  */
+
+  // Transform to API response format
   const fields: FieldResult[] = [
     {
       field: "Brand Name",
@@ -82,7 +105,6 @@ export async function verifyLabel(
     },
   ]
 
-  // Step 4: Determine overall pass/fail
   const allFieldsMatch = fields.every((f) => f.match)
   const processingTimeMs = Date.now() - startTime
 
@@ -90,7 +112,7 @@ export async function verifyLabel(
     success: true,
     overall: allFieldsMatch ? "pass" : "fail",
     fields,
-    ocrText: ocrResult.text,
+    ocrText: "Groq Vision (single-call)",
     processingTimeMs,
   }
 }

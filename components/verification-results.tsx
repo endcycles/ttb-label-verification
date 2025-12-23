@@ -26,6 +26,22 @@ interface VerificationResultsProps {
 export function VerificationResults({ results, onReset }: VerificationResultsProps) {
   const failedFields = results.fields.filter((f) => !f.match)
 
+  const handleDownload = () => {
+    const report = {
+      timestamp: new Date().toISOString(),
+      overall: results.overall,
+      processingTimeMs: results.processingTimeMs,
+      fields: results.fields,
+    }
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `label-verification-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6">
       {/* Overall Status */}
@@ -121,7 +137,7 @@ export function VerificationResults({ results, onReset }: VerificationResultsPro
           <RotateCcw className="mr-2 h-5 w-5" />
           Verify Another Label
         </Button>
-        <Button variant="outline" size="lg" className="flex-1 text-base h-11 bg-transparent">
+        <Button onClick={handleDownload} variant="outline" size="lg" className="flex-1 text-base h-11 bg-transparent">
           <FileDown className="mr-2 h-5 w-5" />
           Download Report
         </Button>
