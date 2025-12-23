@@ -228,13 +228,12 @@ Tests deterministic matching functions without API calls:
 
 ## Deployment
 
-Deployed on Vercel via CLI. Rollback to any git commit as needed.
+Deploy to any Node.js hosting platform (Vercel, Railway, etc.):
 
 ```bash
-vercel --prod
+pnpm build
+pnpm start
 ```
-
-Could configure custom CI/CD on VPS, but Vercel handles this demo well.
 
 ## Project Structure
 
