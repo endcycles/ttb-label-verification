@@ -13,13 +13,13 @@ Agent uploads label image + enters application data. Tool returns PASS or FAIL w
 ## Architecture
 
 ```
-Image → Mistral OCR → extracted text → Gemini 3 Flash → field extraction → deterministic matching → results
+Image → Mistral OCR → extracted text → LLM (Groq or OpenRouter) → field extraction → deterministic matching → results
 ```
 
 **Why this approach:**
 
 1. **Mistral OCR** extracts raw text from the image
-2. **Gemini 3 Flash** extracts specific fields (brand name, ABV, etc.) from that text
+2. **LLM** extracts specific fields (brand name, ABV, etc.) from that text
 3. **Deterministic code** handles matching logic - not the LLM
 
 The LLM extracts; code matches. This ensures consistent, explainable results that comply with regulatory requirements.
@@ -98,12 +98,16 @@ The warning check is strict by regulation. A junior agent caught a label using "
 
 Source: [mistral.ai/news/mistral-ocr-3](https://mistral.ai/news/mistral-ocr-3)
 
-### LLM: Google Gemini 3 Flash (via OpenRouter)
+### LLM: Field Extraction
 
-- **Cost:** $0.50/M input, $3/M output tokens
-- **Why:** Reliable field extraction during demo phase
+Two providers available. Set `LLM_PROVIDER` in `.env` to switch:
 
-**Alternative considered:** Groq OSS-20B at 1000 tokens/second, $0.075/M input, $0.30/M output. Faster and cheaper, but Gemini 3 Flash provides more reliable extraction for this demo. May revisit for production.
+| Provider | Model | Speed | Cost | Status |
+|----------|-------|-------|------|--------|
+| **Groq** (default) | openai/gpt-oss-20b | ~1000 tok/s | $0.10/M in, $0.50/M out | Production |
+| OpenRouter | google/gemini-3-flash-preview | ~200 tok/s | $0.10/M in, $0.40/M out | Alternative |
+
+Both providers pass all E2E tests. Groq is ~5x faster with similar pricing.
 
 ## Performance
 
@@ -147,9 +151,11 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# Add your API keys to .env:
-# - MISTRAL_API_KEY (https://console.mistral.ai/)
-# - OPENROUTER_API_KEY (https://openrouter.ai/)
+# Edit .env with your API keys:
+# - MISTRAL_API_KEY (required) - https://console.mistral.ai/
+# - LLM_PROVIDER (optional) - "groq" (default) or "openrouter"
+# - GROQ_API_KEY (if using Groq) - https://console.groq.com/
+# - OPENROUTER_API_KEY (if using OpenRouter) - https://openrouter.ai/
 
 # Run
 pnpm dev
@@ -159,21 +165,31 @@ pnpm dev
 
 ```bash
 pnpm test        # Watch mode
-pnpm test:unit   # 31 unit tests, no API keys needed
-pnpm test:e2e    # Real API calls, requires keys
-pnpm test:run    # All tests
+pnpm test:unit   # 33 unit tests, no API keys needed
+pnpm test:run    # All tests (43 total with E2E)
 ```
 
 ### Test Structure
 
 ```
 lib/__tests__/
-├── label-verification.test.ts  # Unit tests for matching logic
-├── integration.test.ts         # Pipeline tests with mocked APIs
-└── e2e.test.ts                 # Real API tests with actual images
+└── label-verification.test.ts  # Unit + E2E tests
+
+public/
+├── test-1-exact-match.jpg      # All fields match
+├── test-2-fuzzy-match.jpg      # Case/punctuation variations
+└── test-3-wrong-warning.jpg    # Government warning mismatch
 ```
 
-### Unit Tests (31 tests)
+### Test Summary (43 tests)
+
+| Category | Tests | API Required |
+|----------|-------|--------------|
+| Unit: Matching Logic | 33 | No |
+| E2E: Groq Provider | 5 | MISTRAL_API_KEY, GROQ_API_KEY |
+| E2E: OpenRouter Provider | 5 | MISTRAL_API_KEY, OPENROUTER_API_KEY |
+
+### Unit Tests (33 tests)
 
 Tests deterministic matching functions without API calls:
 
@@ -182,6 +198,7 @@ Tests deterministic matching functions without API calls:
 | Alcohol Content | 11 | ±0.3% tolerance per 27 CFR 5.37(b) |
 | Class/Type (TTB Hierarchy) | 14 | T.D. TTB-158 designation rules |
 | Brand Name Matching | 6 | Case, punctuation, diacritics, whitespace |
+| Net Contents | 2 | Unit normalization (mL, L, etc.) |
 
 ### Edge Cases Covered
 
@@ -215,32 +232,6 @@ Tests deterministic matching functions without API calls:
 | `"Government Warning:"` (title case) | FAIL | Must be all caps |
 | Paraphrased text | FAIL | Must be verbatim |
 
-### CI/CD Example
-
-```yaml
-# GitHub Actions
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
-      - run: pnpm test:unit
-
-  e2e:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    env:
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
-      - run: pnpm test:e2e
-```
-
 ## Deployment
 
 Deployed on Vercel via CLI. Rollback to any git commit as needed.
@@ -255,8 +246,8 @@ Could configure custom CI/CD on VPS, but Vercel handles this demo well.
 
 ```
 lib/
-├── mistral.ts      # OCR extraction
-├── llm.ts          # Field extraction via Gemini
+├── ocr.ts          # OCR extraction (Mistral API)
+├── llm.ts          # Field extraction (Groq or OpenRouter)
 ├── matching.ts     # Deterministic matching logic
 ├── verification.ts # Orchestration
 └── types.ts        # TypeScript interfaces
@@ -293,6 +284,9 @@ Client-side 25-second timeout with "Still processing..." feedback at 10 seconds.
 | Text display | Full text, dynamic height | Compliance accuracy over aesthetic consistency |
 | Error messages | Generic to users | No actionable debug info exposed |
 | Batch upload | Not built | Unknown format, would be guessing |
+| LLM provider | Dual (Groq + OpenRouter) | Swappable via env var for flexibility |
+| OCR markdown | Post-process cleanup | Mistral OCR outputs markdown; we strip `#` prefixes |
+| Matching logic | Deterministic code | LLM extracts, code matches - explainable results |
 
 ## Requirements Coverage
 
@@ -335,6 +329,4 @@ Client-side 25-second timeout with "Still processing..." feedback at 10 seconds.
 
 1. **Batch processing** - Once data format is known
 2. **Wine-specific ABV tolerance** - ±1.0% (>14% ABV) or ±1.5% (≤14% ABV)
-3. **Groq OSS-20B evaluation** - Faster inference, lower cost
-4. **Local OCR** - Mistral model could run on-premise
-5. **COLA integration** - Production would tie into existing system
+4. **Local OCR** - OCR model could run on-premise for security and cost effectiveness, trade-off of being slower and less accurate.

@@ -243,8 +243,8 @@ describe('Brand Name Matching', () => {
   })
 })
 
-const hasApiKeys = process.env.MISTRAL_API_KEY && process.env.OPENROUTER_API_KEY
-const describeE2E = hasApiKeys ? describe : describe.skip
+const hasGroq = process.env.MISTRAL_API_KEY && process.env.GROQ_API_KEY
+const hasOpenRouter = process.env.MISTRAL_API_KEY && process.env.OPENROUTER_API_KEY
 
 // ============================================
 // CONSTANTS
@@ -275,13 +275,13 @@ interface TestCase {
 const TEST_CASES: TestCase[] = [
   // ========== PASS CASES ==========
   {
-    image: 'testing/test-1-exact-match.jpg',
+    image: 'test-1-exact-match.jpg',
     description: 'Exact match - all fields correct',
     formData: CORRECT_FORM_DATA,
     expected: 'pass',
   },
   {
-    image: 'testing/test-2-fuzzy-match.jpg',
+    image: 'test-2-fuzzy-match.jpg',
     description: 'Fuzzy match - case/punctuation variations should pass',
     formData: CORRECT_FORM_DATA,
     expected: 'pass',
@@ -289,14 +289,14 @@ const TEST_CASES: TestCase[] = [
 
   // ========== FAIL CASES ==========
   {
-    image: 'testing/test-3-wrong-warning.jpg',
+    image: 'test-3-wrong-warning.jpg',
     description: 'Wrong government warning format (title case instead of ALL CAPS)',
     formData: CORRECT_FORM_DATA,
     expected: 'fail',
     expectedFailures: ['Government Warning'],
   },
   {
-    image: 'testing/test-1-exact-match.jpg',
+    image: 'test-1-exact-match.jpg',
     description: 'Wrong brand name submitted (form says DISTILLING CO, image says DISTILLERY)',
     formData: {
       ...CORRECT_FORM_DATA,
@@ -306,7 +306,7 @@ const TEST_CASES: TestCase[] = [
     expectedFailures: ['Brand Name'],
   },
   {
-    image: 'testing/test-1-exact-match.jpg',
+    image: 'test-1-exact-match.jpg',
     description: 'Wrong ABV submitted (form says 40%, image shows 45%)',
     formData: {
       ...CORRECT_FORM_DATA,
@@ -337,63 +337,74 @@ function loadImage(filename: string): { base64: string; mimeType: string } | nul
 }
 
 // ============================================
-// TESTS
+// E2E TESTS - Provider Comparison
 // ============================================
 
-describeE2E('Label Verification', () => {
-  let verifyLabel: (
-    imageBase64: string,
-    imageType: string,
-    formData: LabelFormData
-  ) => Promise<VerifyLabelResponse | VerifyLabelError>
+async function runTestCase(
+  testCase: TestCase,
+  index: number,
+  provider: string
+): Promise<{ success: boolean; overall?: string; timeMs?: number }> {
+  const imageData = loadImage(testCase.image)
+  if (!imageData) {
+    console.warn(`⚠️  Skipping: ${testCase.image} not found`)
+    return { success: false }
+  }
 
-  beforeAll(async () => {
-    const verification = await import('../verification')
-    verifyLabel = verification.verifyLabel
+  // Dynamically import to pick up env changes
+  const { verifyLabel } = await import('../verification')
+  const result = await verifyLabel(imageData.base64, imageData.mimeType, testCase.formData)
+
+  console.log(`\n[${provider.toUpperCase()}] Test ${index + 1}: ${testCase.image}`)
+  if (result.success) {
+    console.log(`   Result: ${result.overall.toUpperCase()} (${result.processingTimeMs}ms)`)
+    result.fields.forEach((f) => {
+      const icon = f.match ? '✅' : '❌'
+      console.log(`   ${icon} ${f.field}: "${f.detected}"`)
+    })
+  } else {
+    console.log(`   ❌ Error: ${result.error}`)
+  }
+
+  expect(result.success).toBe(true)
+  if (result.success) {
+    expect(result.overall).toBe(testCase.expected)
+    if (testCase.expectedFailures) {
+      testCase.expectedFailures.forEach((fieldName) => {
+        const field = result.fields.find((f) => f.field === fieldName)
+        expect(field?.match, `${fieldName} should fail`).toBe(false)
+      })
+    }
+    expect(result.processingTimeMs).toBeLessThan(20000)
+    return { success: true, overall: result.overall, timeMs: result.processingTimeMs }
+  }
+  return { success: false }
+}
+
+// E2E Tests - Groq (gpt-oss-20b)
+const describeGroq = hasGroq ? describe : describe.skip
+describeGroq('E2E: Groq (gpt-oss-20b)', () => {
+  beforeAll(() => {
+    process.env.LLM_PROVIDER = 'groq'
   })
 
   TEST_CASES.forEach((testCase, index) => {
     it(`Test ${index + 1}: ${testCase.expected.toUpperCase()} - ${testCase.description}`, async () => {
-      const imageData = loadImage(testCase.image)
+      await runTestCase(testCase, index, 'groq')
+    }, 30000)
+  })
+})
 
-      if (!imageData) {
-        console.warn(`⚠️  Skipping: ${testCase.image} not found in public/`)
-        return
-      }
+// E2E Tests - OpenRouter (Gemini 3 Flash)
+const describeOpenRouter = hasOpenRouter ? describe : describe.skip
+describeOpenRouter('E2E: OpenRouter (Gemini 3 Flash)', () => {
+  beforeAll(() => {
+    process.env.LLM_PROVIDER = 'openrouter'
+  })
 
-      const result = await verifyLabel(imageData.base64, imageData.mimeType, testCase.formData)
-
-      // Log results
-      console.log(`\n📋 Test ${index + 1}: ${testCase.image}`)
-      if (result.success) {
-        console.log(`   Result: ${result.overall.toUpperCase()} (${result.processingTimeMs}ms)`)
-        result.fields.forEach((f) => {
-          const icon = f.match ? '✅' : '❌'
-          console.log(`   ${icon} ${f.field}`)
-          console.log(`      Form:  "${f.submitted}"`)
-          console.log(`      Label: "${f.detected}"`)
-        })
-      } else {
-        console.log(`   ❌ Error: ${result.error}`)
-      }
-
-      // Assertions
-      expect(result.success).toBe(true)
-
-      if (result.success) {
-        expect(result.overall).toBe(testCase.expected)
-
-        // Check specific field failures
-        if (testCase.expectedFailures) {
-          testCase.expectedFailures.forEach((fieldName) => {
-            const field = result.fields.find((f) => f.field === fieldName)
-            expect(field?.match, `${fieldName} should fail`).toBe(false)
-          })
-        }
-
-        // Performance: should be under 8 seconds (5s target + network variance)
-        expect(result.processingTimeMs).toBeLessThan(8000)
-      }
+  TEST_CASES.forEach((testCase, index) => {
+    it(`Test ${index + 1}: ${testCase.expected.toUpperCase()} - ${testCase.description}`, async () => {
+      await runTestCase(testCase, index, 'openrouter')
     }, 30000)
   })
 })

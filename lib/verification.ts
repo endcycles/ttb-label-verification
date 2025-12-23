@@ -1,4 +1,4 @@
-import { extractTextFromImage } from "./mistral"
+import { extractTextFromImage } from "./ocr"
 import { compareWithFormData } from "./llm"
 import type {
   LabelFormData,
