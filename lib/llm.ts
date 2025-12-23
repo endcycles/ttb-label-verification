@@ -7,11 +7,27 @@ import {
   isGovernmentWarningMatch,
 } from "./matching"
 
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-const GROQ_MODEL = "openai/gpt-oss-20b"
+interface ProviderConfig {
+  name: string
+  url: string
+  model: string
+  apiKeyEnv: string
+}
 
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-const OPENROUTER_MODEL = "google/gemini-3-flash-preview"
+const PROVIDERS: Record<string, ProviderConfig> = {
+  groq: {
+    name: "Groq",
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "openai/gpt-oss-20b",
+    apiKeyEnv: "GROQ_API_KEY",
+  },
+  openrouter: {
+    name: "OpenRouter",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    model: "google/gemini-3-flash-preview",
+    apiKeyEnv: "OPENROUTER_API_KEY",
+  },
+}
 
 const EXTRACTION_PROMPT = `You are an OCR text extraction specialist. Extract specific fields from the OCR text.
 
@@ -35,7 +51,12 @@ interface ExtractionResult {
   governmentWarning: string
 }
 
-// Strip markdown artifacts from extracted values
+interface LLMResponse {
+  success: boolean
+  extracted?: ExtractionResult
+  error?: string
+}
+
 function cleanExtraction(result: ExtractionResult): ExtractionResult {
   const clean = (s: string) => s.replace(/^[#*]+\s*/, '').trim()
   return {
@@ -47,37 +68,24 @@ function cleanExtraction(result: ExtractionResult): ExtractionResult {
   }
 }
 
-interface LLMResponse {
-  success: boolean
-  extracted?: ExtractionResult
-  error?: string
-}
-
-function buildUserPrompt(ocrText: string): string {
-  return `OCR TEXT:
-${ocrText}
-
-Extract the brand name, class/type, alcohol content, net contents, and government warning from this text.`
-}
-
-async function extractWithGroq(ocrText: string): Promise<LLMResponse> {
-  const apiKey = process.env.GROQ_API_KEY
+async function extractFields(ocrText: string, provider: ProviderConfig): Promise<LLMResponse> {
+  const apiKey = process.env[provider.apiKeyEnv]
   if (!apiKey) {
-    return { success: false, error: "GROQ_API_KEY not configured" }
+    return { success: false, error: `${provider.apiKeyEnv} not configured` }
   }
 
   try {
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(provider.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: provider.model,
         messages: [
           { role: "system", content: EXTRACTION_PROMPT },
-          { role: "user", content: buildUserPrompt(ocrText) },
+          { role: "user", content: `OCR TEXT:\n${ocrText}\n\nExtract the brand name, class/type, alcohol content, net contents, and government warning from this text.` },
         ],
         temperature: 0,
         max_tokens: 1500,
@@ -87,75 +95,25 @@ async function extractWithGroq(ocrText: string): Promise<LLMResponse> {
 
     if (!response.ok) {
       const errorText = await response.text()
-      return { success: false, error: `Groq API error: ${response.status} - ${errorText}` }
+      return { success: false, error: `${provider.name} API error: ${response.status} - ${errorText}` }
     }
 
     const data = await response.json()
     const content = data.choices?.[0]?.message?.content
     if (!content) {
-      return { success: false, error: "Empty response from Groq" }
+      return { success: false, error: `Empty response from ${provider.name}` }
     }
 
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return { success: false, error: "No JSON found in Groq response" }
+      return { success: false, error: `No JSON found in ${provider.name} response` }
     }
 
     return { success: true, extracted: cleanExtraction(JSON.parse(jsonMatch[0]) as ExtractionResult) }
   } catch (error) {
     return {
       success: false,
-      error: `Groq extraction failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    }
-  }
-}
-
-async function extractWithOpenRouter(ocrText: string): Promise<LLMResponse> {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    return { success: false, error: "OPENROUTER_API_KEY not configured" }
-  }
-
-  try {
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages: [
-          { role: "system", content: EXTRACTION_PROMPT },
-          { role: "user", content: buildUserPrompt(ocrText) },
-        ],
-        temperature: 0,
-        max_tokens: 1500,
-        response_format: { type: "json_object" },
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      return { success: false, error: `OpenRouter API error: ${response.status} - ${errorText}` }
-    }
-
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content
-    if (!content) {
-      return { success: false, error: "Empty response from OpenRouter" }
-    }
-
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return { success: false, error: "No JSON found in OpenRouter response" }
-    }
-
-    return { success: true, extracted: cleanExtraction(JSON.parse(jsonMatch[0]) as ExtractionResult) }
-  } catch (error) {
-    return {
-      success: false,
-      error: `OpenRouter extraction failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      error: `${provider.name} extraction failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     }
   }
 }
@@ -170,11 +128,10 @@ export async function compareWithFormData(
   ocrText: string,
   formData: LabelFormData
 ): Promise<ComparisonResult> {
-  const provider = process.env.LLM_PROVIDER?.toLowerCase() || "groq"
+  const providerKey = process.env.LLM_PROVIDER?.toLowerCase() || "groq"
+  const provider = PROVIDERS[providerKey] || PROVIDERS.groq
 
-  const llmResponse = provider === "openrouter"
-    ? await extractWithOpenRouter(ocrText)
-    : await extractWithGroq(ocrText)
+  const llmResponse = await extractFields(ocrText, provider)
 
   if (!llmResponse.success || !llmResponse.extracted) {
     return { success: false, error: llmResponse.error }
