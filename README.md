@@ -2,6 +2,8 @@
 
 AI-powered verification tool for TTB (Alcohol and Tobacco Tax and Trade Bureau) label compliance.
 
+<img width="883" height="365" alt="Screenshot 2025-12-23 at 8 44 32 PM" src="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02" />
+
 ## The Problem
 
 TTB reviews ~150,000 label applications annually with 47 agents. Half their time is spent on data entry verification: does the label match the application? A previous vendor pilot failed at 30-40 seconds per label. If results take longer than 5 seconds, agents bypass the tool entirely.
