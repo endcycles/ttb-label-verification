@@ -4,7 +4,7 @@ AI-powered verification tool for TTB (Alcohol and Tobacco Tax and Trade Bureau) 
 
 <img width="883" height="365" alt="Screenshot 2025-12-23 at 8 44 32 PM" src="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02" />
 
-<img width="915" height="509" alt="Screenshot 2025-12-23 at 9 05 05 PM" src="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2" />
+<img width="883" height="509" alt="Screenshot 2025-12-23 at 9 05 05 PM" src="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2" />
 
 ## The Problem
 
