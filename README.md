@@ -3,11 +3,11 @@
 AI-powered label verification for TTB compliance. Upload a label image, enter application data, get PASS/FAIL in under 5 seconds.
 
 <p>
-  <a href="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02"><img src="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02" width="400" alt="Single Verification" /></a>
-  <a href="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2"><img src="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2" width="400" alt="Single Results" /></a>
+  <a href="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02"><img src="https://github.com/user-attachments/assets/1c9ba64d-ebb6-412b-b14b-70d136abdc02" width="270" alt="Single Verification" /></a>
+  <a href="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2"><img src="https://github.com/user-attachments/assets/9779ada8-6670-46fe-ae2a-d23740f265a2" width="270" alt="Single Results" /></a>
+  <a href="https://github.com/user-attachments/assets/e434773c-65d8-4fb7-96ed-3a556c198b85"><img src="https://github.com/user-attachments/assets/e434773c-65d8-4fb7-96ed-3a556c198b85" width="270" alt="Bulk Verification" /></a>
 </p>
 <p>
-  <a href="https://github.com/user-attachments/assets/e434773c-65d8-4fb7-96ed-3a556c198b85"><img src="https://github.com/user-attachments/assets/e434773c-65d8-4fb7-96ed-3a556c198b85" width="400" alt="Bulk Verification" /></a>
   <a href="https://github.com/user-attachments/assets/badf3e25-d68e-4896-8ecf-947c98270463"><img src="https://github.com/user-attachments/assets/badf3e25-d68e-4896-8ecf-947c98270463" width="400" alt="Bulk Results" /></a>
 </p>
 
