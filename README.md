@@ -312,10 +312,6 @@ Client-side 25-second timeout with "Still processing..." feedback at 10 seconds.
 - [Wine BAM (PDF)](https://www.ttb.gov/system/files/images/pdfs/wine_bam/complete-wine-beverage-alcohol-manual.pdf)
 - [Malt Beverages BAM (PDF)](https://www.ttb.gov/system/files/images/pdfs/beer-bam/complete-malt-beverage-alcohol-manual.pdf)
 
-### Interactive Tools
-- [Anatomy of a Distilled Spirits Label](https://www.ttb.gov/ds-labeling-home/anatomy-of-a-distilled-spirits-label-tool)
-- [Anatomy of a Wine Label](https://www.ttb.gov/wine/anatomy-of-a-label)
-- [Anatomy of a Malt Beverage Label](https://www.ttb.gov/regulated-commodities/beverage-alcohol/beer/labeling/anatomy-of-a-malt-beverage-label-tool)
 
 ### Code of Federal Regulations
 - 27 CFR Part 4: Wine
