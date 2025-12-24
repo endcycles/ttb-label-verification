@@ -1,5 +1,5 @@
-import { extractTextFromImage } from "./ocr"
-import { compareWithFormData } from "./llm"
+import { extractTextFromImage } from "./ocrService"
+import { compareWithFormData } from "./fieldExtractor"
 import type {
   LabelFormData,
   FieldResult,

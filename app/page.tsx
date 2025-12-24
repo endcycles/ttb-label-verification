@@ -3,7 +3,6 @@ import { SingleVerification } from "@/components/SingleVerification"
 export default function Page() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-4xl px-6 py-5">
           <div className="flex items-center gap-4 select-none pointer-events-none">
@@ -22,7 +21,6 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="mx-auto max-w-4xl px-6 py-4">
         <SingleVerification />
       </main>

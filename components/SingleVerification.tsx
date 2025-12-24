@@ -136,7 +136,6 @@ export function SingleVerification() {
 
     return (
       <div className="animate-fade-in space-y-4">
-        {/* Result Banner - Compact */}
         <div className={cn(
           "rounded-lg px-4 py-3 border flex items-center gap-3",
           isPass

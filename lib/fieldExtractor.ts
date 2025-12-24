@@ -5,7 +5,7 @@ import {
   isAlcoholMatch,
   isNetContentsMatch,
   isGovernmentWarningMatch,
-} from "./matching"
+} from "./fieldMatcher"
 
 interface ProviderConfig {
   name: string

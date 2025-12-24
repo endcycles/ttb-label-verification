@@ -9,7 +9,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { config } from 'dotenv'
 import type { LabelFormData, VerifyLabelResponse, VerifyLabelError } from '../types'
-import { isAlcoholMatch, extractAlcoholPercent, isClassTypeMatch, isFuzzyMatch, isNetContentsMatch, normalizeNetContents } from '../matching'
+import { isAlcoholMatch, extractAlcoholPercent, isClassTypeMatch, isFuzzyMatch, isNetContentsMatch, normalizeNetContents } from '../fieldMatcher'
 
 config({ path: path.join(process.cwd(), '.env') })
 
