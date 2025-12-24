@@ -62,3 +62,26 @@ export interface LLMComparisonResult {
   netContents: LLMFieldResult
   governmentWarning: LLMFieldResult
 }
+
+// ============================================
+// Bulk Verification Types
+// ============================================
+
+export interface BulkItem {
+  id: string
+  imageFile: File | null
+  imagePreview: string | null
+  formData: {
+    brandName: string
+    classType: string
+    alcoholContent: string
+    netContents: string
+  }
+  status: 'pending' | 'processing' | 'complete' | 'error'
+  result?: {
+    overall: 'pass' | 'fail'
+    fields: FieldResult[]
+    processingTimeMs: number
+  }
+  error?: string
+}
